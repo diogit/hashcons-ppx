@@ -1,0 +1,2 @@
+Number of bytes allocated: 0.124252 MB
+Number of bytes allocated: 0.124252 MB

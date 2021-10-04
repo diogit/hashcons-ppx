@@ -1,0 +1,5 @@
+"Rule: ocaml: ml & cmi -> cmx & o (%=hashcons_ppx )": "\175Z/b\148\183\237(;\187\216\225\242`\186\200"
+"Rule: ocaml dependencies ml (%=hashcons_ppx )": "\023\243\139\240\185\020\151H\129/{\204\015O\170\018"
+"Resource: /Users/diogo/MIEI-FCT/5\194\186Ano/2\194\186 Semestre/Elaborac\204\167a\204\131o Dissertac\204\167a\204\131o/PPX/Hashcons/hashcons_ppx.ml": "h\253^c)\252.\181\227M\209\200M&M\138"
+"Rule: ocaml: cmx* & o* -> native (%=hashcons_ppx )": "\231@+\168\193\254\220XUf\014D\167\223\bA"
+"Rule: ocaml: ml -> cmo & cmi (%=hashcons_ppx )": ";\006\022\142n0\255`J\016^{\1953\219\223"
