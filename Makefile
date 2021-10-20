@@ -1,15 +1,15 @@
 # Nome de ficheiros
-AST = preast
+AST = ast
 NATIVE = hashcons_ppx
-FILE = Tests/test
+FILE = Tests/test_term
 DUMP = AST
 RESULT = Results/result
 
 # Comandos
-clean = rm -r -f _build *.native $(RESULT)* $(DUMP).ml
+clean = rm -r -f _build *.native $(RESULT)*
 native = ocamlbuild -package compiler-libs.common  $(NATIVE).native 
 build = ocamlfind ppx_tools/rewriter ./$(NATIVE).native  $(FILE).ml > $(RESULT).ml
-dump = ocamlfind ppx_tools/dumpast -loc_discard $(AST).ml > $(DUMP).ml
+dump = ocamlfind ppx_tools/dumpast -loc_discard $(AST).ml > $(AST)$(DUMP).ml
 exec = ocamlc unix.cma -o $(RESULT) $(RESULT).ml  && ./$(RESULT)
 show = cat $(RESULT).ml
 

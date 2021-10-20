@@ -1,12 +1,11 @@
 # Nome de ficheiros
-FILE = Tests/test
+FILE = before
 RESULT = Results/result
 
 # Comandos
 clean = rm -r -f _build *.native $(RESULT)* $(DUMP).ml
 native = ocamlbuild -package compiler-libs.common  $(NATIVE).native 
 build = ocamlfind ppx_tools/rewriter ./$(NATIVE).native  $(FILE).ml > $(RESULT).ml
-dump = ocamlfind ppx_tools/dumpast -loc_discard $(AST).ml > $(DUMP).ml
 exec = ocamlc unix.cma -o $(RESULT) $(RESULT).ml  && ./$(RESULT)
 show = cat $(RESULT).ml
 
@@ -20,8 +19,6 @@ native:
 	$(native)
 build: 
 	$(build)
-dump: 
-	$(dump)
 exec: 
 	$(exec)
 show: 
