@@ -1,7 +1,7 @@
 # Nome de ficheiros
 AST = ast
 NATIVE = hashcons_ppx
-FILE = Tests/test_term
+FILE = Tests/test
 DUMP = AST
 RESULT = Results/result
 

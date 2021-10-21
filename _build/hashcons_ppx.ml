@@ -338,27 +338,87 @@ let c1 = Exp.case (Pat.construct {txt = Lident "E"; loc=(!default_loc)} None) (E
 
 let c2 = Exp.case (Pat.construct {txt = Lident "N"; loc=(!default_loc)} (Some (Pat.tuple [Pat.any (); (Pat.var {txt = "l"; loc=(!default_loc)}); (Pat.var {txt = "c"; loc=(!default_loc)}); (Pat.var {txt = "r"; loc=(!default_loc)})]))) cr
 
+let applyHash id n =
+let writeEqualCustomID id = if String.length id == 0 then "u_"^(string_of_int n) else id in
+  Exp.apply (Exp.ident ({txt = Lident "*"; loc=(!default_loc)}))
+  [(Nolabel, Exp.constant (Pconst_integer ("19", None)));
+   (Nolabel, Exp.apply (Exp.ident ({txt = Lident "unique"; loc=(!default_loc)}))
+  [(Nolabel, (Exp.ident ({txt = Lident (writeEqualCustomID id); loc=(!default_loc)})))])]
 
-let writeCustomFunc ident =
-  let id = fst ident in
-  let func = snd ident in
-  if func == defaultFunc
-  then (Exp.constant (Pconst_integer ("0", None)))
-  else Exp.apply (Exp.ident func) [(Nolabel, (Exp.ident {txt = Lident (writeCustomID id); loc=(!default_loc)}))]
+(* let applyCustomHash ident =
+  Exp.apply (Exp.ident ({txt = Lident "land"; loc=(!default_loc)}))
+    [(Nolabel, Exp.apply (Exp.ident ({txt = Lident "+"; loc=(!default_loc)}))
+      [(Nolabel, Exp.apply (Exp.ident func) [(Nolabel, (Exp.ident {txt = Lident (writeCustomID id); loc=(!default_loc)}))]);
+       (Nolabel, writeCustomFunc xs)]);
+     (Nolabel, (Exp.ident ({txt = Lident "max_int"; loc=(!default_loc)})))] *)
+
+(* let rec writeCustomFunc idents =
+  match idents with
+  | [] -> Exp.constant (Pconst_integer ("0", None))
+  | [x] -> applyHash (fst x)
+  | x::xs ->
+    let id = fst x in
+    let func =
+    if snd x == defaultFunc
+    then applyHash id
+    else Exp.apply (Exp.ident (snd x)) [(Nolabel, (Exp.ident {txt = Lident (writeCustomID id); loc=(!default_loc)}))]
+    in
+    Exp.apply (Exp.ident ({txt = Lident "land"; loc=(!default_loc)}))
+         [(Nolabel, Exp.apply (Exp.ident ({txt = Lident "+"; loc=(!default_loc)}))
+          [(Nolabel, func); (Nolabel, writeCustomFunc xs)]);
+         (Nolabel, (Exp.ident ({txt = Lident "max_int"; loc=(!default_loc)})))] *)
+    (* then 
+    else Exp.apply (Exp.ident ({txt = Lident "land"; loc=(!default_loc)}))
+         [(Nolabel, Exp.apply (Exp.ident ({txt = Lident "+"; loc=(!default_loc)}))
+          [(Nolabel, Exp.apply (Exp.ident func) [(Nolabel, (Exp.ident {txt = Lident (writeCustomID id); loc=(!default_loc)}))]);
+           (Nolabel, writeCustomFunc xs)]);
+         (Nolabel, (Exp.ident ({txt = Lident "max_int"; loc=(!default_loc)})))] *)
+    
+    (* Exp.apply (Exp.ident func) [(Nolabel, (Exp.ident {txt = Lident (writeCustomID id); loc=(!default_loc)}))] *)
 
 let writeCustomHashFunc idents =
-  if List.length idents == 0 
-  then (Exp.constant (Pconst_integer ("0", None)))
-  else writeCustomFunc (List.hd idents)
+  let n = 0 in
+  let rec writeCustomFunc n idents =
+  match idents with
+  | [] -> Exp.constant (Pconst_integer ("0", None))
+  | [x] -> applyHash (fst x) n
+  | x::xs ->
+    let id = fst x in
+    let func =
+    if snd x == defaultFunc
+    then applyHash id n
+    else Exp.apply (Exp.ident (snd x)) [(Nolabel, (Exp.ident {txt = Lident (writeCustomID id); loc=(!default_loc)}))]
+    in
+    Exp.apply (Exp.ident ({txt = Lident "land"; loc=(!default_loc)}))
+         [(Nolabel, Exp.apply (Exp.ident ({txt = Lident "+"; loc=(!default_loc)}))
+          [(Nolabel, func); (Nolabel, writeCustomFunc (n + 1) xs)]);
+         (Nolabel, (Exp.ident ({txt = Lident "max_int"; loc=(!default_loc)})))]
+    in writeCustomFunc n idents
+  (* if List.length idents == 0 
+  then Exp.constant (Pconst_integer ("0", None))
+  else  *)
     (* print_int (List.length idents); *)
   (* Exp.apply (Exp.ident (snd (List.hd idents))) [(Nolabel, (Exp.ident {txt = Lident (writeCustomID (fst (List.hd idents))); loc=(!default_loc)}))] *)
   
+  let writeHashIdents idents =
+  let n = 0 in
+  let rec writeEqualIdentsAux n idents =
+    let writeEqualCustomID id = if String.length id == 0 then "u_"^(string_of_int n) else id in
+    match idents with
+    | [] -> []
+    | x::xs -> Pat.var {txt = writeEqualCustomID (fst x); loc=(!default_loc)} :: writeEqualIdentsAux (n+1) xs
+  in writeEqualIdentsAux n idents
+
+let writeHashCustomIDPat idents =
+  if List.length idents == 0 
+  then None
+  else Some (Pat.tuple (Pat.any () :: (writeHashIdents idents)))
 
 let hashCases constructors =
   let rec hashCasesAux constructors =
     match constructors with
     | [] -> []
-    | x::xs -> Exp.case (Pat.construct {txt = Lident x.name; loc=(!default_loc)} (writeCustomIDPat x.idents)) (writeCustomHashFunc x.idents) :: hashCasesAux xs
+    | x::xs -> Exp.case (Pat.construct {txt = Lident x.name; loc=(!default_loc)} (writeHashCustomIDPat x.idents)) (writeCustomHashFunc x.idents) :: hashCasesAux xs
   in hashCasesAux constructors
 
 
