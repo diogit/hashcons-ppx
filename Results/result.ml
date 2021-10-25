@@ -1,61 +1,33 @@
-type tree =
-  | E 
-  | N of int * tree * char * tree 
-let unique = function | E  -> 0 | N (u,_,_,_) -> u 
+type term =
+  | K 
+  | Var of int * int 
+  | Lam of int * term 
+  | App of int * term * term 
+let unique =
+  function
+  | K  -> 0
+  | Var (u,_) -> u
+  | Lam (id_lam,_) -> id_lam
+  | App (id_app,_,_) -> id_app 
 module X =
   struct
-    type t = tree
+    type t = term
     let hash =
       function
-      | E  -> 0
-      | N (_,u_0,u_1,u_2) ->
-          ((19 * (unique u_0)) +
-             (((19 * (unique u_1)) + (19 * (unique u_2))) land max_int))
-            land max_int
+      | K  -> 0
+      | Var (_,u_0) -> 19 * (Hashtbl.hash u_0)
+      | Lam (_,id_lam) -> 19 * (unique id_lam)
+      | App (_,id_app,u_1) ->
+          ((Hashtbl.hash id_app) + (19 * (unique u_1))) land max_int
       
     let equal t1 t2 =
       match (t1, t2) with
-      | (E ,E ) -> true
-      | (N (_,l_0,l_1,l_2),N (_,r_0,r_1,r_2)) ->
-          (l_0 == r_0) && ((l_1 == r_1) && (l_2 == r_2))
+      | (K ,K ) -> true
+      | (Var (_,l_0),Var (_,r_0)) -> l_0 == r_0
+      | (Lam (_,l_id_lam0),Lam (_,r_id_lam0)) -> l_id_lam0 == r_id_lam0
+      | (App (_,l_id_app0,l_1),App (_,r_id_app0,r_1)) ->
+          (l_id_app0 == r_id_app0) && (l_1 == r_1)
       | _ -> false 
   end
 module W = (Weak.Make)(X)
 let nodes = W.create 5003 
-let empty = E 
-let node =
-  let cpt = ref 1  in
-  fun l  ->
-    fun c  ->
-      fun r  ->
-        let n0 = N ((!cpt), l, c, r)  in
-        let n = W.merge nodes n0  in if n == n0 then incr cpt; n
-  
-let leaf_x = node E 'x' E 
-let rec create_tree n =
-  if n = 0
-  then (leaf_x, leaf_x)
-  else
-    (let n' = Random.int n  in
-     let (l1,l2) = create_tree n'  in
-     let (r1,r2) = create_tree ((n - n') - 1)  in
-     ((node l1 'm' r1), (node l2 'm' r2)))
-  
-open Format
-module Time =
-  struct
-    open Unix
-    let utime f x y =
-      let u = (times ()).tms_utime  in
-      let z = f x y  in let ut = (times ()).tms_utime -. u  in (z, ut) 
-    let print f x y =
-      let (y,ut) = utime f x y  in printf "user time: %2.2f@." ut; y 
-  end
-let () =
-  let (t1,t2) = create_tree 100_000_000  in
-  Gc.print_stat stderr;
-  (let (b,t) = Time.utime (==) t1 t2  in
-   eprintf "t1 == t2? %b (%f s)@." b t;
-   (let (b,t) = Time.utime X.equal t1 t2  in
-    eprintf "t1 =  t2? %b (%f s)@." b t))
-  

@@ -11,21 +11,31 @@ let print_queue q =
 
 type func = Func of string * string list * Parsetree.expression
 
-let defaultFunc = {txt = Lident ""; loc=(!default_loc)}
+
+type ident = {
+  identName: string;
+  identType: string;
+  func: Longident.t Asttypes.loc
+}
 
 type constructor = {
-  name: string;
-  idents: (string * Longident.t Asttypes.loc) list
+  consName: string;
+  idents: ident list
 }
 
 type customType = {
   typeName: string;
   constructors: constructor list
 }
+let defaultFunc = {txt = Lident ""; loc=(!default_loc)}
+
+let customType = ref {typeName = ""; constructors = []} 
 
 let printIdent ident =
   print_string "(";
-  print_string ( ident);
+  print_string ident.identName;
+  print_string ", ";
+  print_string ident.identType;
   print_string ", [";
   (* print_string "Funcs length: ";
   List.length (snd ident.idents); *)
@@ -33,11 +43,11 @@ let printIdent ident =
   print_newline ()
 
 let printConstructor const =
-  print_string ("name = "^const.name^"\n");
+  print_string ("name = "^const.consName^"\n");
   print_string ("list length = ");
   print_int (List.length const.idents);
   print_newline ();
-  List.iter (fun x -> printIdent (fst x)) (const.idents)
+  List.iter (fun x -> printIdent x) (const.idents)
 
 let printCType type_ =
   print_string "{\n";
@@ -45,53 +55,52 @@ let printCType type_ =
   List.iter printConstructor type_.constructors;
   print_string "\n}"
   
-let customType = ref {typeName = ""; constructors = []} 
-let type_name = ref ""
-let id_names = Queue.create ()
+(* let type_name = ref "" *)
+(* let id_names = Queue.create () *)
 
-let constructTuple l =
+(* let constructTuple l =
   let rec constructList l =
     match l with
     | [] -> []
     | x::xs -> (Exp.construct ({txt = Lident x; loc=(!default_loc)}) None) :: (constructList xs)
-  in Exp.tuple (constructList l)
+  in Exp.tuple (constructList l) *)
 
-let isSingleArg args = if List.length args = 1 then true else false
+(* let isSingleArg args = if List.length args = 1 then true else false *)
 
-let writeCacheArgs args =
+(* let writeCacheArgs args =
   if isSingleArg args
   then Exp.ident {txt = Lident (List.hd args); loc=(!default_loc)}
-  else Exp.ident {txt = Lident "arg"; loc=(!default_loc)}
+  else Exp.ident {txt = Lident "arg"; loc=(!default_loc)} *)
 
-let seq args = Exp.sequence
+(* let seq args = Exp.sequence
   (Exp.apply
     (Exp.ident ({ txt = Ldot (Lident "Hashtbl", "add"); loc=(!default_loc)}))
     [(Nolabel, Exp.ident {txt = Lident "cache"; loc=(!default_loc)});
      (Nolabel, writeCacheArgs args);
      (Nolabel, Exp.ident {txt = Lident "res"; loc=(!default_loc)})]
   )
-  (Exp.ident {txt = Lident "res"; loc=(!default_loc)})
+  (Exp.ident {txt = Lident "res"; loc=(!default_loc)}) *)
 
-let letyBinding expression = Vb.mk (Pat.var {txt = "res"; loc=(!default_loc)}) (expression)
+(* let letyBinding expression = Vb.mk (Pat.var {txt = "res"; loc=(!default_loc)}) (expression) *)
 
-let matchRight expression args = Exp.let_ Nonrecursive [(letyBinding expression)] (seq args)  
+(* let matchRight expression args = Exp.let_ Nonrecursive [(letyBinding expression)] (seq args)   *)
 
-let withCase expression args = 
+(* let withCase expression args = 
   {
     pc_lhs = Pat.construct {txt = Lident "Not_found"; loc=(!default_loc)}
   None; 
   	pc_guard = None;
   	pc_rhs = (matchRight expression args)
-  }
+  } *)
 
-let cacheFind args = Exp.apply
+(* let cacheFind args = Exp.apply
   (Exp.ident ({ txt = Ldot (Lident "Hashtbl", "find"); loc=(!default_loc)}))
   [(Nolabel, Exp.ident {txt = Lident "cache"; loc=(!default_loc)});
-   (Nolabel, writeCacheArgs args)]
+   (Nolabel, writeCacheArgs args)] *)
 
-let tryExp expression args = Exp.try_ (cacheFind args) [(withCase expression args)]
+(* let tryExp expression args = Exp.try_ (cacheFind args) [(withCase expression args)] *)
 
-let rec gExp expression args =
+(* let rec gExp expression args =
   let keepArgs = args in
   let rec writeArgs = function
   | [] -> begin
@@ -100,30 +109,30 @@ let rec gExp expression args =
             else Exp.let_ Nonrecursive [(Vb.mk (Pat.var {txt = "arg"; loc=(!default_loc)}) (constructTuple args))] (tryExp expression keepArgs)
           end
   | x::xs -> Exp.fun_ Nolabel None ((Pat.var {txt = x; loc=(!default_loc)})) (writeArgs xs)
-  in writeArgs args
+  in writeArgs args *)
 
-let g rec_flag funName expression args =
+(* let g rec_flag funName expression args =
   Exp.let_
   rec_flag
   [Vb.mk (Pat.var {txt = funName; loc=(!default_loc)}) (gExp expression args)]
   (Exp.fun_ Nolabel None (Pat.var {txt = "x"; loc=(!default_loc)})
-  (Exp.apply (Exp.ident {txt = Lident funName; loc=(!default_loc)}) [(Nolabel, Exp.ident {txt = Lident "x"; loc=(!default_loc)})]))
+  (Exp.apply (Exp.ident {txt = Lident funName; loc=(!default_loc)}) [(Nolabel, Exp.ident {txt = Lident "x"; loc=(!default_loc)})])) *)
   (*(Exp.ident {txt = Lident funName; loc=(!default_loc)})*)
 
-let cacheCreate = Vb.mk (Pat.var {txt = "cache"; loc=(!default_loc)})
+(* let cacheCreate = Vb.mk (Pat.var {txt = "cache"; loc=(!default_loc)})
   (Exp.apply
     (Exp.ident ({ txt = Ldot (Lident "Hashtbl", "create"); loc=(!default_loc)}))
     [(Nolabel, Exp.constant (Pconst_integer ("16", None)))]
-  )
+  ) *)
 
-let memoExp rec_flag funName expression args = Exp.let_ Nonrecursive [cacheCreate] (g rec_flag funName expression args)
+(* let memoExp rec_flag funName expression args = Exp.let_ Nonrecursive [cacheCreate] (g rec_flag funName expression args) *)
 
-let fix_memo rec_flag funcList = 
+(* let fix_memo rec_flag funcList = 
   let rec writeFuncs funcList =
     match funcList with
     | [] -> []
     | Func(name, args, expr)::xs -> Vb.mk (Pat.var {txt = name; loc=(!default_loc)}) (memoExp rec_flag name expr args)::(writeFuncs xs)
-  in Str.value rec_flag (writeFuncs funcList)
+  in Str.value rec_flag (writeFuncs funcList) *)
 
 let rec getFuncArgsAndBody functionName args expr =
   match expr with
@@ -175,19 +184,15 @@ let searchCustomId args =
   | { ptyp_desc = Ptyp_extension({ txt = "hcons"; loc }, pstr); _}::{ptyp_desc = Ptyp_constr ({txt = Lident idType; _}, []); ptyp_attributes = attrs; _}::xs ->
     begin
       match pstr with
-      | PStr [{pstr_desc = Pstr_eval({pexp_desc = Pexp_ident {txt = Lident id_name; _}; _}, _); _}] ->  Queue.add id_name id_names; (Typ.constr ({txt = Lident idType; loc=(!default_loc)}) [])::xs
-      | _ -> 
-      (* Queue.add "u" id_names;  *)
-      args
+      | PStr [{pstr_desc = Pstr_eval({pexp_desc = Pexp_ident {txt = Lident id_name; _}; _}, _); _}] -> (Typ.constr ({txt = Lident idType; loc=(!default_loc)}) [])::xs
+      | _ -> args
     end
-  | _ -> 
-  (* Queue.add "u" id_names;  *)
-  args
+  | _ -> args
 
   let rec modifyTypeArg variants =
     match variants with
     | [] -> []
-    | {pcd_name = name; pcd_args = Pcstr_tuple []; _}::xs -> Queue.add name.txt id_names; (Type.constructor name)::modifyTypeArg xs
+    | {pcd_name = name; pcd_args = Pcstr_tuple []; _}::xs -> Type.constructor name::modifyTypeArg xs
     | {pcd_name = name; pcd_args = Pcstr_tuple args; _}::xs ->
       let newArgs = searchCustomId args in
       (* print_queue id_names; *)
@@ -219,7 +224,7 @@ type customType = {
   constructors: constructor list
 } *)
 
-let writeCustomID id = if String.length id == 0 then "u" else id
+let writeCustomID id = if String.length id = 0 then "u" else id
 
 let rec writeIdents idents =
   match idents with
@@ -227,20 +232,20 @@ let rec writeIdents idents =
   | _::xs -> Pat.any () :: writeIdents xs
 
 let writeCustomIDPat idents =
-  if List.length idents == 0 
+  if List.length idents = 0 
   then None
-  else Some (Pat.tuple (Pat.var {txt = writeCustomID (fst (List.hd idents)); loc=(!default_loc)} :: (writeIdents idents)))
+  else Some (Pat.tuple (Pat.var {txt = writeCustomID (List.hd idents).identName; loc=(!default_loc)} :: (writeIdents idents)))
 
 let writeCustomIDExpr idents =
-  if List.length idents == 0 
+  if List.length idents = 0 
   then (Exp.constant (Pconst_integer ("0", None)))
-  else (Exp.ident {txt = Lident (writeCustomID (fst (List.hd idents))); loc=(!default_loc)})
+  else (Exp.ident {txt = Lident (writeCustomID (List.hd idents).identName); loc=(!default_loc)})
 
 let unique constructors =
   let rec newUniqueAux constructors =
     match constructors with
     | [] ->  []
-    | x::xs -> Exp.case (Pat.construct {txt = Lident x.name; loc=(!default_loc)} (writeCustomIDPat x.idents)) (writeCustomIDExpr x.idents) :: newUniqueAux xs
+    | x::xs -> Exp.case (Pat.construct {txt = Lident x.consName; loc=(!default_loc)} (writeCustomIDPat x.idents)) (writeCustomIDExpr x.idents) :: newUniqueAux xs
   in Str.value Nonrecursive [Vb.mk (Pat.var {txt = "unique"; loc=(!default_loc)}) (Exp.function_ (newUniqueAux constructors))]
 (* [
   Exp.case (Pat.construct {txt = Lident "E"; loc=(!default_loc)} None)
@@ -272,20 +277,23 @@ let rec getIdAndFunct args =
   (* print_int (List.length args); *)
   match args with
   | [] -> []
-  | [{ptyp_desc = Ptyp_constr ({txt = Lident ident; _}, []); _}] -> [("", defaultFunc)]
-  | {ptyp_desc = Ptyp_extension({ txt = "hcons"; loc }, pstr); _}::{ptyp_desc = Ptyp_constr ({txt = Lident idType; _}, []); ptyp_attributes = attrs; _}::xs ->
+  | [{ptyp_desc = Ptyp_constr ({txt = Lident identType; _}, []); _}] -> [{identName = ""; identType = identType; func = defaultFunc}]
+  (* [("", defaultFunc)] *)
+  | {ptyp_desc = Ptyp_extension({ txt = "hcons"; _}, pstr); _}::{ptyp_desc = Ptyp_constr ({txt = Lident identType; _}, []); ptyp_attributes = attrs; _}::xs ->
     begin
       match pstr with
-      | PStr [{pstr_desc = Pstr_eval({pexp_desc = Pexp_ident {txt = Lident id_name; _}; _}, _); _}] -> (id_name, getFunction attrs)::getIdAndFunct xs
+      | PStr [{pstr_desc = Pstr_eval({pexp_desc = Pexp_ident {txt = Lident identName; _}; _}, _); _}] -> {identName = identName; identType = identType; func = getFunction attrs} :: getIdAndFunct xs
+      (* (id_name, getFunction attrs)::getIdAndFunct xs *)
       | _ -> getIdAndFunct xs
     end
-  | _::xs -> ("", defaultFunc)::getIdAndFunct xs
+  | _::xs -> {identName = ""; identType = ""; func = defaultFunc} :: getIdAndFunct xs
+  (* ("", defaultFunc)::getIdAndFunct xs *)
 
 let rec getConstructors variants =
       match variants with
     (* | {pcd_name = name; pcd_args = Pcstr_tuple []; _}::xs -> {name = name.txt; idents = []}:: getConstructors xs *)
     | [] -> []
-    | {pcd_name = name; pcd_args = Pcstr_tuple args; _}::xs -> {name = name.txt; idents = getIdAndFunct args} :: getConstructors xs
+    | {pcd_name = name; pcd_args = Pcstr_tuple args; _}::xs -> {consName = name.txt; idents = getIdAndFunct args} :: getConstructors xs
     | _ -> []
 
 (* let rec getCustomType t =
@@ -311,39 +319,46 @@ let rec getConstructors variants =
   getCustomType (List.hd types_str_list);
   List.map (addInteger) types_str_list *)
 
-let typeTree customType = Str.type_ Recursive [Type.mk ~manifest:(Typ.mk (Ptyp_constr ({txt = Lident (!customType.typeName); loc=(!default_loc)}, []))) ({txt = "t"; loc=(!default_loc)})]
+let typeT customType = Str.type_ Recursive [Type.mk ~manifest:(Typ.mk (Ptyp_constr ({txt = Lident (!customType.typeName); loc=(!default_loc)}, []))) ({txt = "t"; loc=(!default_loc)})]
 
 (* HASH FUNCTION *)
-let ae1112 = (Nolabel, Exp.apply (Exp.ident ({ txt = Ldot (Lident "Char", "code"); loc=(!default_loc)})) [(Nolabel, Exp.ident ({txt = Lident "c"; loc=(!default_loc)}))])
+(* let ae1112 = (Nolabel, Exp.apply (Exp.ident ({ txt = Ldot (Lident "Char", "code"); loc=(!default_loc)})) [(Nolabel, Exp.ident ({txt = Lident "c"; loc=(!default_loc)}))]) *)
 
-let ae11112 = (Nolabel, Exp.apply (Exp.ident ({txt = Lident "unique"; loc=(!default_loc)})) [(Nolabel, (Exp.ident ({txt = Lident "l"; loc=(!default_loc)})))])
+(* let ae11112 = (Nolabel, Exp.apply (Exp.ident ({txt = Lident "unique"; loc=(!default_loc)})) [(Nolabel, (Exp.ident ({txt = Lident "l"; loc=(!default_loc)})))]) *)
 
-let ae11111 = (Nolabel, (Exp.constant (Pconst_integer ("19", None))))
+(* let ae11111 = (Nolabel, (Exp.constant (Pconst_integer ("19", None)))) *)
 
-let ae1111 = (Nolabel, Exp.apply (Exp.ident ({txt = Lident "*"; loc=(!default_loc)})) [ae11111; ae11112])
+(* let ae1111 = (Nolabel, Exp.apply (Exp.ident ({txt = Lident "*"; loc=(!default_loc)})) [ae11111; ae11112]) *)
 
-let ae112 = (Nolabel, Exp.apply (Exp.ident ({txt = Lident "+"; loc=(!default_loc)})) [ae1111; ae1112])
+(* let ae112 = (Nolabel, Exp.apply (Exp.ident ({txt = Lident "+"; loc=(!default_loc)})) [ae1111; ae1112]) *)
 
-let ae111 = (Nolabel, (Exp.constant (Pconst_integer ("19", None))))
+(* let ae111 = (Nolabel, (Exp.constant (Pconst_integer ("19", None)))) *)
 
-let ae12 = (Nolabel, Exp.apply (Exp.ident ({txt = Lident "unique"; loc=(!default_loc)})) [(Nolabel, (Exp.ident ({txt = Lident "r"; loc=(!default_loc)})))])
+(* let ae12 = (Nolabel, Exp.apply (Exp.ident ({txt = Lident "unique"; loc=(!default_loc)})) [(Nolabel, (Exp.ident ({txt = Lident "r"; loc=(!default_loc)})))]) *)
 
-let ae11 = (Nolabel, Exp.apply (Exp.ident ({txt = Lident "*"; loc=(!default_loc)})) [ae111; ae112])
+(* let ae11 = (Nolabel, Exp.apply (Exp.ident ({txt = Lident "*"; loc=(!default_loc)})) [ae111; ae112]) *)
 
-let ae2 = (Nolabel, (Exp.ident ({txt = Lident "max_int"; loc=(!default_loc)})))
+(* let ae2 = (Nolabel, (Exp.ident ({txt = Lident "max_int"; loc=(!default_loc)}))) *)
 
-let ae1 = (Nolabel, Exp.apply (Exp.ident ({txt = Lident "+"; loc=(!default_loc)})) [ae11; ae12])
-let cr = Exp.apply (Exp.ident ({txt = Lident "land"; loc=(!default_loc)})) [ae1; ae2]
-let c1 = Exp.case (Pat.construct {txt = Lident "E"; loc=(!default_loc)} None) (Exp.constant (Pconst_integer ("0", None)))
+(* let ae1 = (Nolabel, Exp.apply (Exp.ident ({txt = Lident "+"; loc=(!default_loc)})) [ae11; ae12]) *)
+(* let cr = Exp.apply (Exp.ident ({txt = Lident "land"; loc=(!default_loc)})) [ae1; ae2] *)
+(* let c1 = Exp.case (Pat.construct {txt = Lident "E"; loc=(!default_loc)} None) (Exp.constant (Pconst_integer ("0", None))) *)
 
-let c2 = Exp.case (Pat.construct {txt = Lident "N"; loc=(!default_loc)} (Some (Pat.tuple [Pat.any (); (Pat.var {txt = "l"; loc=(!default_loc)}); (Pat.var {txt = "c"; loc=(!default_loc)}); (Pat.var {txt = "r"; loc=(!default_loc)})]))) cr
+(* let c2 = Exp.case (Pat.construct {txt = Lident "N"; loc=(!default_loc)} (Some (Pat.tuple [Pat.any (); (Pat.var {txt = "l"; loc=(!default_loc)}); (Pat.var {txt = "c"; loc=(!default_loc)}); (Pat.var {txt = "r"; loc=(!default_loc)})]))) cr *)
 
-let applyHash id n =
-let writeEqualCustomID id = if String.length id == 0 then "u_"^(string_of_int n) else id in
+let applyHash ident n =
+let writeEqualCustomID id =
+  if String.length ident.identName = 0
+  then "u_"^(string_of_int n)
+  else id
+in
   Exp.apply (Exp.ident ({txt = Lident "*"; loc=(!default_loc)}))
   [(Nolabel, Exp.constant (Pconst_integer ("19", None)));
-   (Nolabel, Exp.apply (Exp.ident ({txt = Lident "unique"; loc=(!default_loc)}))
-  [(Nolabel, (Exp.ident ({txt = Lident (writeEqualCustomID id); loc=(!default_loc)})))])]
+   (Nolabel,
+   (if ident.identType = !customType.typeName
+   then Exp.apply (Exp.ident ({txt = Lident "unique"; loc=(!default_loc)}))
+   else Exp.apply (Exp.ident ({txt = Ldot (Lident "Hashtbl", "hash"); loc=(!default_loc)})))
+  [(Nolabel, (Exp.ident ({txt = Lident (writeEqualCustomID ident.identName); loc=(!default_loc)})))])]
 
 (* let applyCustomHash ident =
   Exp.apply (Exp.ident ({txt = Lident "land"; loc=(!default_loc)}))
@@ -381,13 +396,13 @@ let writeCustomHashFunc idents =
   let rec writeCustomFunc n idents =
   match idents with
   | [] -> Exp.constant (Pconst_integer ("0", None))
-  | [x] -> applyHash (fst x) n
+  | [x] -> applyHash x n
   | x::xs ->
-    let id = fst x in
+    (* let id = fst x in *)
     let func =
-    if snd x == defaultFunc
-    then applyHash id n
-    else Exp.apply (Exp.ident (snd x)) [(Nolabel, (Exp.ident {txt = Lident (writeCustomID id); loc=(!default_loc)}))]
+    if x.func = defaultFunc
+    then applyHash x n
+    else Exp.apply (Exp.ident x.func) [(Nolabel, (Exp.ident {txt = Lident (writeCustomID x.identName); loc=(!default_loc)}))]
     in
     Exp.apply (Exp.ident ({txt = Lident "land"; loc=(!default_loc)}))
          [(Nolabel, Exp.apply (Exp.ident ({txt = Lident "+"; loc=(!default_loc)}))
@@ -403,14 +418,14 @@ let writeCustomHashFunc idents =
   let writeHashIdents idents =
   let n = 0 in
   let rec writeEqualIdentsAux n idents =
-    let writeEqualCustomID id = if String.length id == 0 then "u_"^(string_of_int n) else id in
+    let writeEqualCustomID id = if String.length id = 0 then "u_"^(string_of_int n) else id in
     match idents with
     | [] -> []
-    | x::xs -> Pat.var {txt = writeEqualCustomID (fst x); loc=(!default_loc)} :: writeEqualIdentsAux (n+1) xs
+    | x::xs -> Pat.var {txt = writeEqualCustomID x.identName; loc=(!default_loc)} :: writeEqualIdentsAux (n+1) xs
   in writeEqualIdentsAux n idents
 
 let writeHashCustomIDPat idents =
-  if List.length idents == 0 
+  if List.length idents = 0 
   then None
   else Some (Pat.tuple (Pat.any () :: (writeHashIdents idents)))
 
@@ -418,7 +433,7 @@ let hashCases constructors =
   let rec hashCasesAux constructors =
     match constructors with
     | [] -> []
-    | x::xs -> Exp.case (Pat.construct {txt = Lident x.name; loc=(!default_loc)} (writeHashCustomIDPat x.idents)) (writeCustomHashFunc x.idents) :: hashCasesAux xs
+    | x::xs -> Exp.case (Pat.construct {txt = Lident x.consName; loc=(!default_loc)} (writeHashCustomIDPat x.idents)) (writeCustomHashFunc x.idents) :: hashCasesAux xs
   in hashCasesAux constructors
 
 
@@ -453,8 +468,8 @@ let writeEqualArgs idents =
     let writeEqualCustomID s id = (s^"_"^id)^(string_of_int n) in
     match idents with
     | [] -> Exp.construct ({txt = Lident "true"; loc=(!default_loc)}) None
-    | x::[] -> applyEqual (writeEqualCustomID "l" (fst x)) (writeEqualCustomID "r" (fst x))
-    | x::xs -> Exp.apply (Exp.ident ({txt = Lident "&&"; loc=(!default_loc)})) [(Nolabel, applyEqual (writeEqualCustomID "l" (fst x)) (writeEqualCustomID "r" (fst x))); (Nolabel, writeEqualIdentsAux (n + 1) xs)]
+    | x::[] -> applyEqual (writeEqualCustomID "l" x.identName) (writeEqualCustomID "r" x.identName)
+    | x::xs -> Exp.apply (Exp.ident ({txt = Lident "&&"; loc=(!default_loc)})) [(Nolabel, applyEqual (writeEqualCustomID "l" x.identName) (writeEqualCustomID "r" x.identName)); (Nolabel, writeEqualIdentsAux (n + 1) xs)]
     (* | _ -> applyEqual (writeEqualCustomID "l" "l") (writeEqualCustomID "r" "r") *)
   in writeEqualIdentsAux n idents
 
@@ -471,11 +486,11 @@ let writeEqualIdents s idents =
     let writeEqualCustomID id = (s^"_"^id)^(string_of_int n) in
     match idents with
     | [] -> []
-    | x::xs -> Pat.var {txt = writeEqualCustomID (fst x); loc=(!default_loc)} :: writeEqualIdentsAux (n + 1) s xs
+    | x::xs -> Pat.var {txt = writeEqualCustomID x.identName; loc=(!default_loc)} :: writeEqualIdentsAux (n + 1) s xs
   in writeEqualIdentsAux n s idents
 
 let writeEqualCustomIDPat s idents =
-  if List.length idents == 0 
+  if List.length idents = 0 
   then None
   else Some (Pat.tuple (Pat.any () :: (writeEqualIdents s idents)))
 
@@ -486,7 +501,7 @@ let equalCases constructors =
   let rec equalCasesAux constructors =
     match constructors with
     | [] ->  []
-    | x::xs -> Exp.case (Pat.tuple [(Pat.construct {txt = Lident x.name; loc=(!default_loc)} (writeEqualCustomIDPat "l" x.idents)); (Pat.construct {txt = Lident x.name; loc=(!default_loc)} (writeEqualCustomIDPat "r" x.idents))]) (writeEqualArgs x.idents) :: equalCasesAux xs
+    | x::xs -> Exp.case (Pat.tuple [(Pat.construct {txt = Lident x.consName; loc=(!default_loc)} (writeEqualCustomIDPat "l" x.idents)); (Pat.construct {txt = Lident x.consName; loc=(!default_loc)} (writeEqualCustomIDPat "r" x.idents))]) (writeEqualArgs x.idents) :: equalCasesAux xs
   in equalCasesAux constructors
 
 (* let d1 = Exp.case (Pat.tuple [(Pat.construct {txt = Lident x.name; loc=(!default_loc)} (writeEqualCustomIDPat "l" x.idents)); (Pat.construct {txt = Lident x.name; loc=(!default_loc)} (writeEqualCustomIDPat "r" x.idents))]) (Exp.construct ({txt = Lident "true"; loc=(!default_loc)}) None) *)
@@ -506,7 +521,7 @@ let equal customType = Str.value Nonrecursive [
 (*  *)
 
 (* Module *)
-let module_ customType = Str.module_ (Mb.mk ({txt = "X"; loc=(!default_loc)}) (Mod.structure [typeTree customType; hash customType; equal customType]))
+let module_ customType = Str.module_ (Mb.mk ({txt = "X"; loc=(!default_loc)}) (Mod.structure [typeT customType; hash customType; equal customType]))
 (*  *)
 
 (* Instanciate WeakHashtable *)
@@ -637,7 +652,9 @@ let rec str_defunc_mapper mapper str_list =
       let newType = Str.type_ rec_flag [Type.mk ~kind:(Ptype_variant (modifyTypeArg variants)) name] in
       let unique = unique !customType.constructors in
       let module_ = module_ customType in
-      List.rev (newType::unique::module_::weakHashtable::nodes::empty::node::acc)
+      List.rev (newType::unique::module_::weakHashtable::nodes::
+      (* empty::node:: *)
+      acc)
        | _ -> 
        (* (str_item_defunc_mapper mapper str):: *)
        acc                   

@@ -2,6 +2,15 @@ type%hashcons tree =
   | E 
   | N of tree * char * tree
 
+let empty = E 
+let node =
+  let cpt = ref 1  in
+  fun l  ->
+    fun c  ->
+      fun r  ->
+        let n0 = N ((!cpt), l, c, r)  in
+        let n = W.merge nodes n0  in if n == n0 then incr cpt; n
+        
 let leaf_x =
   node E 'x' E
   
