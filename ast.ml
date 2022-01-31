@@ -9,3 +9,10 @@ type%hashcons term =
 
 let hash = function
   | App (_, x0) -> Hashtbl.hash x0 *)
+
+type%hashcons term =
+  | K
+  | Var of [%hcons id_var] * int
+  | Lam of term
+  | App of term * term
+  | Long of int * int * int * int * int
